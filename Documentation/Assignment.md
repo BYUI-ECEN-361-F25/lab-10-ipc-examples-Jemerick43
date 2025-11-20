@@ -1,5 +1,6 @@
 # ECEN-361 Lab-10: IPC-Examples
-     Student Name:  ___________________________________
+
+     Student Name: James Emerick
 
 ## Introduction and Objectives of the Lab
 
@@ -25,9 +26,13 @@ tasks (and assignments) are described in the respective sections of the
 lab.
 
 The API's for [CMSIS-RTOS V2](https://arm-software.github.io/CMSIS_5/RTOS2/html/rtos_api2.html) and [FreeRTOS](https://www.freertos.org/a00106.html) are great resources to look for function information. Keep in mind we are using CMSIS-RTOS V2 but we included task notification functions from FreeRTOS. You can easily tell what API the function is from by its prefix, x is from FreeRTOS, os is from CMSIS-RTOS V2.
-___
+
+---
+
 <!--------------------------------------------------------------------------------->
+
 ## Part 1: RTOS-friendly debounced buttons -- Notifications and Semaphores
+
 <!--------------------------------------------------------------------------------->
 
 As discussed in class, all mechanical buttons come with the mechanically
@@ -64,11 +69,11 @@ debounce wait, that then starts the task(s):
 />
 
 <!-------------------------------------------------------------------------------->
-### Part 1:  Instructions and Questions (2 pts)
 
+### Part 1: Instructions and Questions (2 pts)
 
->**Create a Task**<br>
-(Either use the GUI -- *Under Middleware/FreeRTOS* or manually in the code) that will toggle LED_D4 each time Button_1 is pressed by acquiring the semaphore.
+> **Create a Task**<br>
+> (Either use the GUI -- _Under Middleware/FreeRTOS_ or manually in the code) that will toggle LED_D4 each time Button_1 is pressed by acquiring the semaphore.
 
 **NOTE**: When you create a task with the .IOC file (via the GUI), there are two fields:
 <img src="media/Create_Task.png" alt="safe-debounce" width="85%" style="display: block; margin: 0 auto;" :w
@@ -80,31 +85,28 @@ Now make sure to write the code inside of the Semaphore_Toggle_Task function tha
 
 <br>
 1. How did your task ‘wait’ for the debounced button? <br>
-<mark>_______________________________________________________ </mark>
+<mark>by using the 'osSemaphoreAcquire' command, we essentially waiting until the 'StartDebounce' function releases the semaphore</mark>
 <br>
 <br><br>
 
-2.)	How long is the time between the button interrupt coming in and it being enabled again? <br>
-<mark>_______________________________________________________ </mark>
-><br>
+2.) How long is the time between the button interrupt coming in and it being enabled again? <br>
+<mark>30ms, based on the osDelay(30) function use on line 785 </mark>
+
+> <br>
 > <br>
 
->**Second Task Creation**<br>
-Now create a second task (semaphore_Toggle_D3) -- <p>
->Modify this so that it that also waits for the same Button_1_Semaphore.  It should then toggle LED_D3 each time Button_1 is pressed.  Note that they should both have been created with the same Priority (Normal).<br><br>
+> **Second Task Creation**<br>
+> Now create a second task (semaphore_Toggle_D3) -- <p>
+> Modify this so that it that also waits for the same Button_1_Semaphore. It should then toggle LED_D3 each time Button_1 is pressed. Note that they should both have been created with the same Priority (Normal).<br><br>
 
+3.) Do both of (D4 and D3) toggle with a single button press? Describe the behavior? <br>
+<mark>No, one led toggles after the other with their own button presses. When both are on, sometimes they will both toggle off with the same button press while other times one will toggle after the other (again needing separate button presses.<br>
 
-
-3.)	Do both of (D4 and D3) toggle with a single button press?  Describe the behavior?  <br>
-<mark>_________________________________________________________________________________<br><br>
-
-4.)	Now change one of the priorities of these two tasks, re-compile,  and re-run.
+4.) Now change one of the priorities of these two tasks, re-compile, and re-run.
 How has the behavior changed?
-<mark>_________________________________________________________________________________<br><br>
-
+<mark>********\*\*********\*\*\*\*********\*\*********\_********\*\*********\*\*\*\*********\*\*********<br>I changed D3's corresponding task to a higher priority and now only D3 toggles with the button press<br>
 
 ## Part 2: Mutexes
-
 
 Mutex's are used in embedded systems to guarantee exclusive access to a
 resource that more than one process may need to use. Examples include
@@ -129,15 +131,16 @@ CountUp are both trying at random intervals, and the Reset_MutexCount
 waits for the Button_3 (via its associated semaphore), then resets the
 current count. The first two processes are done for you "Mutex_CountDownTask" and "Mutex_CountUpTask"
 
-
-### Part 2:  Instructions and Questions (4 pt)
+### Part 2: Instructions and Questions (4 pt)
 
 6.) Add the third process that uses the mutex to take control and put a “—” on the Two_Digit UpDown SevenSegment Display.
 
 <br>Use the following code in your process:<br>
-><br>
+
+> <br>
+
 ```c
-    for(;;) 
+    for(;;)
         {
         /* This doesn't change the value, it just clears the display  */
         /* If asked to display a negative number, the function displays a "--"
@@ -149,27 +152,28 @@ current count. The first two processes are done for you "Mutex_CountDownTask" an
         osDelay(2);
         }
 ```
->
-><br>
->7.)	Comment on the Up/Down/ ”—” display that you see.  <br><br>
-><mark>___________________________________________________________________________________________________________<br><br><p>
 
+> <br>
+> 7.)	Comment on the Up/Down/ ”—” display that you see.  <br><br>
+> <mark>The display is alternating between displaying the value and just showing the two dashes "--".<br><br><p>
 
->8.)	Is there a ‘priority’ associated with the Mutex?  If so, how can it be changed?
-><br>  
-><mark>___________________________________________________________________________________________________________<br><br>
+> 8.) Is there a ‘priority’ associated with the Mutex? If so, how can it be changed?
+> <br>  
+> <mark>Yes, there are two Mutex tasks with the same priority (Mutex_CountUp and Mutex_CountDown) Their priorities can be changed in the GUI, just like with the semaphore.<br><br>
+
 <p>
 
-><br>
->9.)	Button_3 resets the mutex-protected global variable to “50.”  It too, has to wait for the mutex to be granted.<br>
+> <br>
+> 9.)	Button_3 resets the mutex-protected global variable to “50.”  It too, has to wait for the mutex to be granted.<br>
 
->  Change the priority of the Reset to be osPriorityIdle.  This is the lowest priority available. Note that you will not find this priority type listed in the .ioc configuration, as it is intended to be used for idle threads. This priority must be manually set in the code.<br>
-><br> Did you see any effect on the ability of Button_3 to reset the count?<br><br>
-><mark>___________________________________________________________________________________________________________<br><br>
->
+> Change the priority of the Reset to be osPriorityIdle. This is the lowest priority available. Note that you will not find this priority type listed in the .ioc configuration, as it is intended to be used for idle threads. This priority must be manually set in the code.<br> ><br> Did you see any effect on the ability of Button_3 to reset the count?<br><br> ><mark>No, Button_3 still resets the count like normal<br><br>
+
 ---
+
 <!--------------------------------------------------------------------------------->
-##  Part 3: Software Timers
+
+## Part 3: Software Timers
+
 <!--------------------------------------------------------------------------------->
 
 In a previous lab, we learned how to setup any of the hardware timer
@@ -186,48 +190,39 @@ Button_2 is used to toggle the SW_Timer_7Seg between running/stopped.
 When the timer expires, it calls a routine to decrement the left-most
 display digit.
 
+### Part 3: Instructions and Questions (2 pts)
 
-### Part 3:  Instructions and Questions (2 pts)
+> 9.) Change the timer period from the current “200” mS to something different.
+> Verify that the decrementing count changes accordingly.
 
->
->9.)	 Change the timer period from the current “200” mS to something different.
->Verify that the decrementing count changes accordingly.
+> 10.) This timer was created via the GUI (.IOC file). It’s type is _“osTimerPeriodic”_ which means it repeats over and over.<br><br>
+> What other options can a Software Timer take to change its Type and operation? <br> ><mark>Software timer can be changed from periodic to "Once", allowing button to toggle one count per button press<br><br>
 
->
->10.) This timer was created via the GUI  (.IOC file).  It’s type is *“osTimerPeriodic”* which means it repeats over and over.<br><br>
-What other options can a Software Timer take to change its Type and operation? <br>
-><mark>___________________________________________________________________________________________________________<br><br>
-
->11).	The debounce for the switches here used an osDelay() call (non-blocking).  Is there any advantage to using a SWTimer here instead?<br>
+> 11). The debounce for the switches here used an osDelay() call (non-blocking). Is there any advantage to using a SWTimer here instead?<br>
 > Explain why or why not?
 >
-><mark>___________________________________________________________________________________________________________<br><br>
-
+> <mark>Yes; osDelay is a blocking function while SWTimer is not. This means that SWTimer is ideal for use in ISRs since it frees up CPU cycles and stack/ memory resources.<br><br>
 
 <!--------------------------------------------------------------------------------->
+
 ## Ideas for Credit to get to 'A' & Extra-Credit (2 pts for any)
+
 <!--------------------------------------------------------------------------------->
 
->1.	The Seven-Seg Display is currently refreshed with a hardware (TIM17) timer.  Make this more thread-safe by changing the refresh as a process that is based off a S/W timer.
+> 1.  The Seven-Seg Display is currently refreshed with a hardware (TIM17) timer. Make this more thread-safe by changing the refresh as a process that is based off a S/W timer.
 >
->Write about how you did it, and what the slowest period could be to keep the persistence looking good:
-><mark>___________________________________________________________________________________________________________<br><br>
+> Write about how you did it, and what the slowest period could be to keep the persistence looking good:
+> <mark>**********\*\*\*\***********\*\*\*\***********\*\*\*\***********\_\_\_**********\*\*\*\***********\*\*\*\***********\*\*\*\***********<br><br>
 
->2.	We only used a binary semaphore in this lab for the switch presses.  Change it so that presses are accumulated through a counting semaphore and then handled as they are taken off.<br><br>
->Describe any issues with this approach
+> 2.  We only used a binary semaphore in this lab for the switch presses. Change it so that presses are accumulated through a counting semaphore and then handled as they are taken off.<br><br>
+>     Describe any issues with this approach
 >
-><mark>___________________________________________________________________________________________________________<br><br>
->
-
->
-
+> <mark>**********\*\*\*\***********\*\*\*\***********\*\*\*\***********\_\_\_**********\*\*\*\***********\*\*\*\***********\*\*\*\***********<br><br>
 
 >
->3.	Any other relevant uses for semaphores, mutexes, or S/W timers ?   Describe what you’ve done and why?
+
+> 3.  Any other relevant uses for semaphores, mutexes, or S/W timers ? Describe what you’ve done and why?
 >
-><mark>___________________________________________________________________________________________________________<br><br>
+> <mark>Mutexes are good for essential processes that need to be uninteruptible, while semaphores are better for multitasking or processes that switch context regularly. For example, core processes that occur on boot-up may be better suited to utilize Mutexes while user-defined operations might be better with semaphores. S/W timers are better in general for more important tasks since they allow tasks to remain free since the callback runs in the timer service task instead of being blocked until the delay expires.<br><br>
 >
-><br>
-
-
-
+> <br>

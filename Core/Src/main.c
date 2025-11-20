@@ -106,6 +106,27 @@ const osThreadAttr_t DebounceTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for SemaphoreToggle */
+osThreadId_t SemaphoreToggleHandle;
+const osThreadAttr_t SemaphoreToggle_attributes = {
+  .name = "SemaphoreToggle",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for SemaphoreD3 */
+osThreadId_t SemaphoreD3Handle;
+const osThreadAttr_t SemaphoreD3_attributes = {
+  .name = "SemaphoreD3",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal2,
+};
+/* Definitions for UpdateGlobDispl */
+osThreadId_t UpdateGlobDisplHandle;
+const osThreadAttr_t UpdateGlobDispl_attributes = {
+  .name = "UpdateGlobDispl",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* Definitions for SW_Timer_7Seg */
 osTimerId_t SW_Timer_7SegHandle;
 const osTimerAttr_t SW_Timer_7Seg_attributes = {
@@ -165,6 +186,9 @@ void Mutex_CountDownTask(void *argument);
 void UpdateGlobDisplayProcess(void *argument);
 void ResetGlobalTask(void *argument);
 void StartDebounce(void *argument);
+void Semaphore_Toggle_Task(void *argument);
+void semaphore_Toggle_D3(void *argument);
+void Update_Glob_Display_Process(void *argument);
 void SW_Timer_Countdown(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -246,7 +270,7 @@ int main(void)
 
   /* Create the timer(s) */
   /* creation of SW_Timer_7Seg */
-  SW_Timer_7SegHandle = osTimerNew(SW_Timer_Countdown, osTimerPeriodic, NULL, &SW_Timer_7Seg_attributes);
+  SW_Timer_7SegHandle = osTimerNew(SW_Timer_Countdown, osTimerOnce, NULL, &SW_Timer_7Seg_attributes);
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
@@ -280,6 +304,15 @@ int main(void)
 
   /* creation of DebounceTask */
   DebounceTaskHandle = osThreadNew(StartDebounce, NULL, &DebounceTask_attributes);
+
+  /* creation of SemaphoreToggle */
+  SemaphoreToggleHandle = osThreadNew(Semaphore_Toggle_Task, NULL, &SemaphoreToggle_attributes);
+
+  /* creation of SemaphoreD3 */
+  SemaphoreD3Handle = osThreadNew(semaphore_Toggle_D3, NULL, &SemaphoreD3_attributes);
+
+  /* creation of UpdateGlobDispl */
+  UpdateGlobDisplHandle = osThreadNew(Update_Glob_Display_Process, NULL, &UpdateGlobDispl_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -372,7 +405,7 @@ static void MX_TIM17_Init(void)
   htim17.Instance = TIM17;
   htim17.Init.Prescaler = 800-1;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim17.Init.Period = 100;
+  htim17.Init.Period = 150;
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim17.Init.RepetitionCounter = 0;
   htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -637,7 +670,7 @@ void SW_Timer_Task(void *argument)
 	if (osTimerIsRunning(SW_Timer_7SegHandle))
 		osTimerStop(SW_Timer_7SegHandle );
 	else
-		osTimerStart(SW_Timer_7SegHandle , 200);
+		osTimerStart(SW_Timer_7SegHandle , 150);
     osDelay(1);
   }
   /* USER CODE END SW_Timer_Task */
@@ -777,6 +810,73 @@ void StartDebounce(void *argument)
 	     if (buttons_in & B3) { osSemaphoreRelease(Button_3_SemaphoreHandle); }
 	 }
   /* USER CODE END StartDebounce */
+}
+
+/* USER CODE BEGIN Header_Semaphore_Toggle_Task */
+/**
+* @brief Function implementing the SemaphoreToggle thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Semaphore_Toggle_Task */
+void Semaphore_Toggle_Task(void *argument)
+{
+  /* USER CODE BEGIN Semaphore_Toggle_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+	if (osSemaphoreAcquire(Button_1_SemaphoreHandle, osWaitForever) == osOK){
+			HAL_GPIO_TogglePin(LED_D4_GPIO_Port, LED_D4_Pin);
+	}
+
+
+  }
+  /* USER CODE END Semaphore_Toggle_Task */
+}
+
+/* USER CODE BEGIN Header_semaphore_Toggle_D3 */
+/**
+* @brief Function implementing the SemaphoreD3 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_semaphore_Toggle_D3 */
+void semaphore_Toggle_D3(void *argument)
+{
+  /* USER CODE BEGIN semaphore_Toggle_D3 */
+  /* Infinite loop */
+  for(;;)
+  {
+	  if (osSemaphoreAcquire(Button_1_SemaphoreHandle, osWaitForever) == osOK){
+	  			HAL_GPIO_TogglePin(LED_D3_GPIO_Port, LED_D3_Pin);
+	  	}
+  }
+  /* USER CODE END semaphore_Toggle_D3 */
+}
+
+/* USER CODE BEGIN Header_Update_Glob_Display_Process */
+/**
+* @brief Function implementing the UpdateGlobDispl thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Update_Glob_Display_Process */
+void Update_Glob_Display_Process(void *argument)
+{
+  /* USER CODE BEGIN Update_Glob_Display_Process */
+  /* Infinite loop */
+  for(;;)
+  {
+	  /* This doesn't change the value, it just clears the display  */
+	  /* If asked to display a negative number, the function displays a "--"
+	  */
+	  osMutexWait(UpDownMutexHandle,osWaitForever);
+	  MultiFunctionShield_Display_Two_Digits(-1);
+	  osDelay(200);
+	  osMutexRelease(UpDownMutexHandle);
+	  osDelay(2);
+  }
+  /* USER CODE END Update_Glob_Display_Process */
 }
 
 /* SW_Timer_Countdown function */
